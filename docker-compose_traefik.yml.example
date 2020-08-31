@@ -29,6 +29,16 @@ services:
        --providers.docker.watch=true
        --providers.docker.exposedbydefault=false
        --entryPoints.web.address=:80
+       --entryPoints.websecure.address=:443
+       --entryPoints.smtp.address=:25
+       --entryPoints.smtps.address=:465
+       --entryPoints.submission.address=:587
+       --entryPoints.imap.address=:143
+       --entryPoints.imaps.address=:993
+       --entryPoints.pop.address=:110
+       --entryPoints.pops.address=:995
+       --entryPoints.sieve.address=:4190
+
     networks:
       - public
 

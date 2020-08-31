@@ -1,8 +1,16 @@
 # mailcow: dockerized - 🐮 + 🐋 = 💕
 
-## Docker Swarm
+## Docker Swarm Support
 
 This fork adds the possibility to deploy mailcow dockerized to Docker Swarm. Work in progress.
+
+**!!! WARNING !!! Do not use in productive environment -> WORK IN PROGRESS**
+
+Following services which comes with mailcow-dockerized are deactivated:
+- netfilter (supports single nodes only, should be replaced with fail2ban-swarmerized)
+- ipv6nat (replaced by swarm and traefik)
+- unbound (replaced by swarm)
+- acme (replaced by traefik)
 
 ## Want to support mailcow?
 
