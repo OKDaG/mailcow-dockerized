@@ -67,6 +67,7 @@ services:
         - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
         - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
       volumes:
+        - rspamd-vol-1:/var/lib/rspamd
         - /opt/config/mailcow/hooks/rspamd:/hooks
         - /opt/config/mailcow/conf/rspamd/custom/:/etc/rspamd/custom
         - /opt/config/mailcow/conf/rspamd/override.d/:/etc/rspamd/override.d
@@ -75,7 +76,6 @@ services:
         - /opt/config/mailcow/conf/rspamd/lua/:/etc/rspamd/lua/:ro
         - /opt/config/mailcow/conf/rspamd/rspamd.conf.local:/etc/rspamd/rspamd.conf.local
         - /opt/config/mailcow/conf/rspamd/rspamd.conf.override:/etc/rspamd/rspamd.conf.override
-        - rspamd-vol-1:/var/lib/rspamd
         - /opt/config/mailcow/Dockerfiles/rspamd/docker-entrypoint.sh:/docker-entrypoint.sh
       hostname: rspamd
       networks:
@@ -97,7 +97,6 @@ services:
         - /opt/config/mailcow/web:/web:rw
         - /opt/config/mailcow/conf/rspamd/dynmaps:/dynmaps:ro
         - /opt/config/mailcow/conf/rspamd/custom/:/rspamd_custom_maps
-        - rspamd-vol-1:/var/lib/rspamd
         - /opt/config/mailcow/conf/sogo/:/etc/sogo/
         - /opt/config/mailcow/conf/rspamd/meta_exporter:/meta_exporter:ro
         - /opt/config/mailcow/conf/phpfpm/sogo-sso/:/etc/sogo-sso/
@@ -194,7 +193,6 @@ services:
         - crypt-vol-1:/mail_crypt/
         - /opt/config/mailcow/conf/rspamd/custom/:/etc/rspamd/custom
         - /opt/config/mailcow/assets/templates:/templates
-        - rspamd-vol-1:/var/lib/rspamd
         - /opt/config/mailcow/Dockerfiles/dovecot/docker-entrypoint.sh:/docker-entrypoint.sh
       environment:
         - LOG_LINES=${LOG_LINES:-9999}
@@ -258,7 +256,6 @@ services:
         - /opt/config/mailcow/assets/ssl:/etc/ssl/mail/:ro
         - postfix-vol-1:/var/spool/postfix
         - crypt-vol-1:/var/lib/zeyple
-        - rspamd-vol-1:/var/lib/rspamd
         - /opt/config/mailcow/Dockerfiles/postfix/postfix.sh:/opt/postfix.sh
       environment:
         - LOG_LINES=${LOG_LINES:-9999}
@@ -399,7 +396,6 @@ services:
       # Debug
       #command: /watchdog.sh
       volumes:
-        - rspamd-vol-1:/var/lib/rspamd
         - postfix-vol-1:/var/spool/postfix
         - /opt/config/mailcow/assets/ssl:/etc/ssl/mail/:ro
       environment:
