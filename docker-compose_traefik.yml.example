@@ -15,7 +15,7 @@ services:
       - 995:995
       - 4190:4190
     deploy:
-      replicas: 1
+      replicas: 2
       update_config:
         parallelism: 1
         delay: 10s
@@ -46,10 +46,25 @@ services:
        --entryPoints.pop.address=:110
        --entryPoints.pops.address=:995
        --entryPoints.sieve.address=:4190
-
     networks:
       - public
 
+  traefik-certs-dumper:
+    image: ldez/traefik-certs-dumper:v2.7.0
+    entrypoint: sh -c '
+      apk add jq
+      ; while ! [ -e /data/acme.json ]
+        || ! [ `jq ".[].Certificates | length" /data/acme.json` != 0 ]; do
+          sleep 1
+      ; done
+      && echo watch certs
+      && traefik-certs-dumper file --watch
+        --source /data/acme.json --dest /data/certs --domain-subdir=true --version v2'
+    networks:
+      - public
+    volumes:
+      - /opt/config/traefik:/data
+ 
 networks:
   public:
     driver: overlay

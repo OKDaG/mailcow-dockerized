@@ -19,9 +19,9 @@ services:
         reservations:
           cpus: '0.25'
           memory: 512M
-      placement:
-        constraints:
-          - node.hostname == docker-desktop
+#      placement:
+#        constraints:
+#          - node.hostname == ${dockernode}
       labels:
         - traefik.enable=true
         - traefik.docker.network=traefik_public
@@ -44,9 +44,9 @@ services:
         reservations:
           cpus: '0.15'
           memory: 128M
-      placement:
-        constraints:
-          - node.hostname == docker-desktop
+#      placement:
+#        constraints:
+#          - node.hostname == ${dockernode}
 
   influxdbs:
     image: influxdb:1.7
@@ -62,9 +62,9 @@ services:
         reservations:
           cpus: '0.30'
           memory: 128M
-      placement:
-        constraints:
-          - node.hostname == docker-desktop
+#      placement:
+#        constraints:
+#          - node.hostname == ${dockernode}
 
   agent:
     image: swarmpit/agent:latest

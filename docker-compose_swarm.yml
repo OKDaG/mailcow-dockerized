@@ -18,10 +18,6 @@ services:
         net:
           aliases:
             - mysql
-      deploy:
-        placement:
-          constraints:
-            - node.hostname == ${dockernode}
 
     redis-mailcow:
       image: redis:5-alpine
@@ -33,10 +29,6 @@ services:
         net:
           aliases:
             - redis
-      deploy:
-        placement:
-          constraints:
-            - node.hostname == ${dockernode}
 
     clamd-mailcow:
       image: mailcow/clamd:1.36
@@ -49,10 +41,6 @@ services:
         net:
           aliases:
             - clamd
-#      deploy:
-#        placement:
-#          constraints:
-#            - node.hostname == ${dockernode}
 
     rspamd-mailcow:
       image: mailcow/rspamd:1.68
@@ -82,10 +70,6 @@ services:
         net:
           aliases:
             - rspamd
-      deploy:
-        placement:
-          constraints:
-            - node.hostname == ${dockernode}
 
     php-fpm-mailcow:
       image: mailcow/phpfpm:1.67
@@ -140,10 +124,6 @@ services:
         net:
           aliases:
             - phpfpm
-      deploy:
-        placement:
-          constraints:
-            - node.hostname == ${dockernode}
 
     sogo-mailcow:
       image: mailcow/sogo:1.81
@@ -173,10 +153,6 @@ services:
         net:
           aliases:
             - sogo
-      deploy:
-        placement:
-          constraints:
-            - node.hostname == ${dockernode}
 
     dovecot-mailcow:
       image: mailcow/dovecot:1.128
@@ -219,9 +195,6 @@ services:
             - dovecot
         traefik_public:
       deploy:
-        placement:
-          constraints:
-            - node.hostname == ${dockernode}
         labels:
           - traefik.enable=true
           - traefik.docker.network=traefik_public
@@ -272,9 +245,6 @@ services:
             - postfix
         traefik_public:
       deploy:
-        placement:
-          constraints:
-            - node.hostname == ${dockernode}
         labels:
           - traefik.enable=true
           - traefik.docker.network=traefik_public
@@ -299,10 +269,6 @@ services:
         net:
           aliases:
             - memcached
-#      deploy:
-#        placement:
-#          constraints:
-#            - node.hostname == ${dockernode}
 
     nginx-mailcow:
       depends_on:
@@ -341,9 +307,6 @@ services:
             - nginx
         traefik_public:
       deploy:
-#        placement:
-#          constraints:
-#            - node.hostname == ${dockernode}
         labels:
           - traefik.enable=true
           - traefik.docker.network=traefik_public
@@ -351,105 +314,6 @@ services:
           - traefik.http.routers.sogo.entryPoints=web
           - traefik.http.routers.sogo.service=sogo
           - traefik.http.routers.sogo.rule=Host(`sogo.local`)
-
-#    acme-mailcow:
-#      depends_on:
-#        - nginx-mailcow
-#      image: mailcow/acme:1.73
-#      dns:
-#        - 8.8.8.8
-#      environment:
-#        - LOG_LINES=${LOG_LINES:-9999}
-#        - ADDITIONAL_SAN=${ADDITIONAL_SAN}
-#        - MAILCOW_HOSTNAME=${MAILCOW_HOSTNAME}
-#        - DBNAME=${DBNAME}
-#        - DBUSER=${DBUSER}
-#        - DBPASS=${DBPASS}
-#        - SKIP_LETS_ENCRYPT=${SKIP_LETS_ENCRYPT:-n}
-#        - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-mailcow-dockerized}
-#        - DIRECTORY_URL=${DIRECTORY_URL:-}
-#        - ENABLE_SSL_SNI=${ENABLE_SSL_SNI:-n}
-#        - SKIP_IP_CHECK=${SKIP_IP_CHECK:-n}
-#        - SKIP_HTTP_VERIFICATION=${SKIP_HTTP_VERIFICATION:-n}
-#        - ONLY_MAILCOW_HOSTNAME=${ONLY_MAILCOW_HOSTNAME:-n}
-#        - LE_STAGING=${LE_STAGING:-n}
-#        - TZ=${TZ}
-#        - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
-#        - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
-#        - SNAT_TO_SOURCE=${SNAT_TO_SOURCE:-n}
-#        - SNAT6_TO_SOURCE=${SNAT6_TO_SOURCE:-n}
-#      volumes:
-#        - /opt/config/mailcow/web/.well-known/acme-challenge:/var/www/acme:rw
-#        - /opt/config/mailcow/assets/ssl:/var/lib/acme/:rw
-#        - /opt/config/mailcow/assets/ssl-example:/var/lib/ssl-example/:ro
-#      networks:
-#        net:
-#          aliases:
-#            - acme
-#      deploy:
-#        placement:
-#          constraints:
-#            - node.hostname == ${dockernode}
-
-    watchdog-mailcow:
-      image: mailcow/watchdog:1.81
-      # Debug
-      #command: /watchdog.sh
-      volumes:
-        - postfix-vol-1:/var/spool/postfix
-        - /opt/config/mailcow/assets/ssl:/etc/ssl/mail/:ro
-      environment:
-        - IPV6_NETWORK=${IPV6_NETWORK:-fd4d:6169:6c63:6f77::/64}
-        - LOG_LINES=${LOG_LINES:-9999}
-        - TZ=${TZ}
-        - DBNAME=${DBNAME}
-        - DBUSER=${DBUSER}
-        - DBPASS=${DBPASS}
-        - DBROOT=${DBROOT}
-        - USE_WATCHDOG=${USE_WATCHDOG:-n}
-        - WATCHDOG_NOTIFY_EMAIL=${WATCHDOG_NOTIFY_EMAIL}
-        - WATCHDOG_NOTIFY_BAN=${WATCHDOG_NOTIFY_BAN:-y}
-        - WATCHDOG_EXTERNAL_CHECKS=${WATCHDOG_EXTERNAL_CHECKS:-n}
-        - WATCHDOG_MYSQL_REPLICATION_CHECKS=${WATCHDOG_MYSQL_REPLICATION_CHECKS:-n}
-        - MAILCOW_HOSTNAME=${MAILCOW_HOSTNAME}
-        - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-mailcow-dockerized}
-        - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
-        - IP_BY_DOCKER_API=${IP_BY_DOCKER_API:-0}
-        - CHECK_UNBOUND=${CHECK_UNBOUND:-1}
-        - SKIP_CLAMD=${SKIP_CLAMD:-n}
-        - SKIP_LETS_ENCRYPT=${SKIP_LETS_ENCRYPT:-n}
-        - SKIP_SOGO=${SKIP_SOGO:-n}
-        - HTTPS_PORT=${HTTPS_PORT:-443}
-        - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
-        - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
-        - EXTERNAL_CHECKS_THRESHOLD=1
-        - NGINX_THRESHOLD=5
-        - UNBOUND_THRESHOLD=5
-        - REDIS_THRESHOLD=5
-        - MYSQL_THRESHOLD=5
-        - MYSQL_REPLICATION_THRESHOLD=1
-        - SOGO_THRESHOLD=3
-        - POSTFIX_THRESHOLD=8
-        - CLAMD_THRESHOLD=15
-        - DOVECOT_THRESHOLD=12
-        - DOVECOT_REPL_THRESHOLD=20
-        - PHPFPM_THRESHOLD=5
-        - RATELIMIT_THRESHOLD=1
-        - FAIL2BAN_THRESHOLD=1
-        - ACME_THRESHOLD=1
-        - IPV6NAT_THRESHOLD=1
-        - RSPAMD_THRESHOLD=5
-        - OLEFY_THRESHOLD=5
-        - MAILQ_THRESHOLD=20
-        - MAILQ_CRIT=30
-      networks:
-        net:
-          aliases:
-            - watchdog
-      deploy:
-        placement:
-          constraints:
-            - node.hostname == ${dockernode}
 
     dockerapi-mailcow:
       image: mailcow/dockerapi:1.37
@@ -462,10 +326,6 @@ services:
         net:
           aliases:
             - dockerapi
-      deploy:
-        placement:
-          constraints:
-            - node.hostname == ${dockernode}
 
 #    solr-mailcow:
 #      image: mailcow/solr:1.7
@@ -500,10 +360,6 @@ services:
         net:
           aliases:
             - olefy
-#      deploy:
-#        placement:
-#          constraints:
-#            - node.hostname == ${dockernode}
 
 networks:
   net:
