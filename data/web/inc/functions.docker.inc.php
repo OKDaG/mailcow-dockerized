@@ -25,7 +25,7 @@ function docker($action, $service_name = null, $attr1 = null, $attr2 = null, $ex
           foreach ($containers as $container) {
             if (isset($container['Config']['Labels']['com.docker.swarm.service.name'])
               && $container['Config']['Labels']['com.docker.swarm.service.name'] == $service_name
-              && strtolower($container['Config']['Labels']['-H mysqlcom.docker.stack.namespace']) == strtolower(getenv('COMPOSE_PROJECT_NAME'))) {
+              && strtolower($container['Config']['Labels']['com.docker.stack.namespace']) == strtolower(getenv('COMPOSE_PROJECT_NAME'))) {
               return trim($container['Id']);
             }
           }
@@ -48,7 +48,7 @@ function docker($action, $service_name = null, $attr1 = null, $attr2 = null, $ex
         $containers = json_decode($response, true);
         if (!empty($containers)) {
           foreach ($containers as $container) {
-            if (strtolower($container['Config']['Labels']['-H mysqlcom.docker.stack.namespace']) == strtolower(getenv('COMPOSE_PROJECT_NAME'))) {
+            if (strtolower($container['Config']['Labels']['com.docker.stack.namespace']) == strtolower(getenv('COMPOSE_PROJECT_NAME'))) {
               $out[$container['Config']['Labels']['com.docker.swarm.service.name']]['State'] = $container['State'];
               $out[$container['Config']['Labels']['com.docker.swarm.service.name']]['Config'] = $container['Config'];
             }
@@ -89,8 +89,8 @@ function docker($action, $service_name = null, $attr1 = null, $attr2 = null, $ex
         if (!empty($decoded_response)) {
           if (empty($service_name)) {
             foreach ($decoded_response as $container) {
-              if (isset($container['Config']['Labels']['-H mysqlcom.docker.stack.namespace'])
-                && strtolower($container['Config']['Labels']['-H mysqlcom.docker.stack.namespace']) == strtolower(getenv('COMPOSE_PROJECT_NAME'))) {
+              if (isset($container['Config']['Labels']['com.docker.stack.namespace'])
+                && strtolower($container['Config']['Labels']['com.docker.stack.namespace']) == strtolower(getenv('COMPOSE_PROJECT_NAME'))) {
                 unset($container['Config']['Env']);
                 $out[$container['Config']['Labels']['com.docker.swarm.service.name']]['State'] = $container['State'];
                 $out[$container['Config']['Labels']['com.docker.swarm.service.name']]['Config'] = $container['Config'];
@@ -98,8 +98,8 @@ function docker($action, $service_name = null, $attr1 = null, $attr2 = null, $ex
             }
           }
           else {
-            if (isset($decoded_response['Config']['Labels']['-H mysqlcom.docker.stack.namespace']) 
-              && strtolower($decoded_response['Config']['Labels']['-H mysqlcom.docker.stack.namespace']) == strtolower(getenv('COMPOSE_PROJECT_NAME'))) {
+            if (isset($decoded_response['Config']['Labels']['com.docker.stack.namespace']) 
+              && strtolower($decoded_response['Config']['Labels']['com.docker.stack.namespace']) == strtolower(getenv('COMPOSE_PROJECT_NAME'))) {
               unset($container['Config']['Env']);
               $out[$decoded_response['Config']['Labels']['com.docker.swarm.service.name']]['State'] = $decoded_response['State'];
               $out[$decoded_response['Config']['Labels']['com.docker.swarm.service.name']]['Config'] = $decoded_response['Config'];

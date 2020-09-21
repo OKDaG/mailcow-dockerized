@@ -19,16 +19,16 @@ services:
         reservations:
           cpus: '0.25'
           memory: 512M
-#      placement:
-#        constraints:
-#          - node.hostname == ${dockernode}
       labels:
         - traefik.enable=true
         - traefik.docker.network=traefik_public
         - traefik.http.services.swarmpit.loadbalancer.server.port=8080
-        - traefik.http.routers.swarmpit.entryPoints=web
+        - traefik.http.routers.swarmpit.entryPoints=websecure
         - traefik.http.routers.swarmpit.service=swarmpit
-        - traefik.http.routers.swarmpit.rule=Host(`swarmpit.local`)
+        - traefik.http.routers.swarmpit.rule=Host(`$swarmpit_hostname`)
+        - traefik.http.routers.swarmpit.tls=true
+        - traefik.http.routers.swarmpit.tls.certresolver=sslresolver
+        - traefik.http.routers.swarmpit.middlewares=secHeaders@file
 
   db:
     image: couchdb:2.3.0
@@ -44,9 +44,6 @@ services:
         reservations:
           cpus: '0.15'
           memory: 128M
-#      placement:
-#        constraints:
-#          - node.hostname == ${dockernode}
 
   influxdbs:
     image: influxdb:1.7
@@ -62,9 +59,6 @@ services:
         reservations:
           cpus: '0.30'
           memory: 128M
-#      placement:
-#        constraints:
-#          - node.hostname == ${dockernode}
 
   agent:
     image: swarmpit/agent:latest
