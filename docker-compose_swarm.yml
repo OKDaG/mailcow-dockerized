@@ -322,10 +322,13 @@ services:
         - TZ=${TZ}
       volumes:
         - /var/run/docker.sock:/var/run/docker.sock:ro
+        - /opt/config/mailcow/Dockerfiles/dockerapi/dockerapi.py:/app/dockerapi.py:ro
       networks:
         net:
           aliases:
             - dockerapi
+      deploy:
+        mode: global
 
 #    solr-mailcow:
 #      image: mailcow/solr:1.7

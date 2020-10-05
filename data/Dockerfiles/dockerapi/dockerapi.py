@@ -26,12 +26,12 @@ api = Api(app)
 
 class containers_get(Resource):
   def get(self):
-    if self.is_swarm_mode() and request.args.get('fetch_containers') is None:
+    if self.is_swarm_mode():
       return self.swarm_containers_get()
     else:
-      return self.local_containers_get()
+      return self.node_containers_get()
 
-  def local_containers_get(self):
+  def node_containers_get(self):
     containers = {}
     try:
       for container in docker_client.containers.list(all=True):
@@ -42,12 +42,10 @@ class containers_get(Resource):
 
   def swarm_containers_get(self):
     containers = {}
-
     print(self.get_docker_swarm_nodes())
-
     for node in self.get_docker_swarm_nodes():
       host = IPv4Interface(node)
-      url = "https://" + str(host.ip) + "/containers/json?fetch_containers=true"
+      url = "https://" + str(host.ip) + "/swarmcontainers/json"
       r = requests.get(url, verify=False)
       r_containers = r.json()
       containers.update(r_containers)
@@ -56,11 +54,9 @@ class containers_get(Resource):
   # get all docker api nodes (deployed globally) in swarm to get container infos
   def get_docker_swarm_nodes(self):
     swarm_nodes = []
-
-    for service in docker_client.services.list(filters={"name":"test_agent"}):
-      for task in docker_client.services.get(service.attrs['ID']).tasks():
-        swarm_nodes.append(task.get('NetworksAttachments')[0].get('Addresses')[0])
-
+    for dockerapi_service in docker_client.services.list(filters={"name":"mailcow_dockerapi-mailcow"}):
+      for dockerapi_task in docker_client.services.get(dockerapi_service.attrs['ID']).tasks():
+        swarm_nodes.append(dockerapi_task.get('NetworksAttachments')[0].get('Addresses')[0])
     return swarm_nodes
 
   def is_swarm_mode(self):
@@ -70,13 +66,13 @@ class containers_get(Resource):
     except (AttributeError, docker.errors.APIError):
       return False
 
-class services_get(Resource):
+class swarm_containers_get(Resource):
   def get(self):
-    services = {}
+    containers = {}
     try:
-      for service in docker_client.services.list():
-        services.update({service.attrs['ID']: service.attrs})
-      return services
+      for container in docker_client.containers.list(all=True):
+        containers.update({container.attrs['Id']: container.attrs})
+      return containers
     except Exception as e:
       return jsonify(type='danger', msg=str(e))
 
@@ -90,60 +86,6 @@ class container_get(Resource):
           return jsonify(type='danger', msg=str(e))
     else:
       return jsonify(type='danger', msg='no or invalid id defined')
-
-class service_get(Resource):
-  def get(self, service_id):
-    if service_id and service_id.isalnum():
-      try:
-        return docker_client.services.get(service_id).attrs
-      except Exception as e:
-          return jsonify(type='danger', msg=str(e))
-    else:
-      return jsonify(type='danger', msg='no or invalid id defined')
-
-class service_tasks_get(Resource):
-  def get(self, service_id):
-    if service_id and service_id.isalnum():
-      try:
-        return docker_client.services.get(service_id).tasks()
-      except Exception as e:
-          return jsonify(type='danger', msg=str(e))
-    else:
-      return jsonify(type='danger', msg='no or invalid id defined')
-
-class swarm_containers_get(Resource):
-  def get(self):
-    self.is_swarm_mode()
-    containers = {}
-    services = {}
-    service_nodes = []
-    for service in docker_client.services.list(filters={"name":"test_agent"}):
-      services.update({service.attrs['ID']: service.attrs})
-    for service in services:
-      for task in docker_client.services.get(service).tasks():
-        service_nodes.append(task.get('NetworksAttachments')[0].get('Addresses')[0])
-    for node in service_nodes:
-      host = IPv4Interface(node)
-      url = "https://" + str(host.ip) + "/containers/json"
-      print(url)
-      r = requests.get(url)
-      print(r)
-      for container in r:
-        containers.update({container.attrs['Id']: container.attrs})
-    return containers
-
-  def is_swarm_mode(self):
-    try:
-      docker_client.swarm.reload()
-      print(docker_client.swarm.attrs)
-      return True
-    except docker.errors.APIError as e:
-      return False
-
-#    for service in docker_client.services.list():
-#      - hole zum service alle tasks 
-#      - hole addresses aller dockerapis
-#      - query an sich selbst: http://an alle docker apis/container
 
 class container_post(Resource):
   def post(self, container_id, post_action):
@@ -171,13 +113,6 @@ class container_post(Resource):
 
     else:
       return jsonify(type='danger', msg='invalid container id or missing action')
-
-  # get all docker api nodes to get container infos
-  def get_all_service_nodes(self):
-    service_nodes = {}
-    for service_node in docker_client.services.list(filters={"name":"test_agent"}):
-      service_nodes.update({service_node.attrs["Addresses"]: service_node.attrs})
-    return service_nodes
 
   # api call: container_post - post_action: stop
   def container_post__stop(self, container_id):
@@ -220,7 +155,7 @@ class container_post(Resource):
       filtered_qids = filter(r.match, request.json['items'])
       if filtered_qids:
         flagged_qids = ['-d %s' % i for i in filtered_qids]
-        sanitized_string = str(' '.join(flagged_qids));
+        sanitized_string = str(' '.join(flagged_qids))
 
         for container in docker_client.containers.list(filters={"id": container_id}):
           postsuper_r = container.exec_run(["/bin/bash", "-c", "/usr/sbin/postsuper " + sanitized_string])
@@ -233,7 +168,7 @@ class container_post(Resource):
       filtered_qids = filter(r.match, request.json['items'])
       if filtered_qids:
         flagged_qids = ['-h %s' % i for i in filtered_qids]
-        sanitized_string = str(' '.join(flagged_qids));
+        sanitized_string = str(' '.join(flagged_qids))
 
         for container in docker_client.containers.list(filters={"id": container_id}):
           postsuper_r = container.exec_run(["/bin/bash", "-c", "/usr/sbin/postsuper " + sanitized_string])
@@ -245,7 +180,7 @@ class container_post(Resource):
       r = re.compile("^[0-9a-fA-F]+$")
       filtered_qids = filter(r.match, request.json['items'])
       if filtered_qids:
-        sanitized_string = str(' '.join(filtered_qids));
+        sanitized_string = str(' '.join(filtered_qids))
 
         for container in docker_client.containers.list(filters={"id": container_id}):
           postcat_return = container.exec_run(["/bin/bash", "-c", "/usr/sbin/postcat -q " + sanitized_string], user='postfix')
@@ -260,7 +195,7 @@ class container_post(Resource):
       filtered_qids = filter(r.match, request.json['items'])
       if filtered_qids:
         flagged_qids = ['-H %s' % i for i in filtered_qids]
-        sanitized_string = str(' '.join(flagged_qids));
+        sanitized_string = str(' '.join(flagged_qids))
 
         for container in docker_client.containers.list(filters={"id": container_id}):
           postsuper_r = container.exec_run(["/bin/bash", "-c", "/usr/sbin/postsuper " + sanitized_string])
@@ -277,7 +212,7 @@ class container_post(Resource):
 
         for container in docker_client.containers.list(filters={"id": container_id}):
           for i in flagged_qids:
-            postqueue_r = container.exec_run(["/bin/bash", "-c", "/usr/sbin/postqueue " + i], user='postfix')
+            container.exec_run(["/bin/bash", "-c", "/usr/sbin/postqueue " + i], user='postfix')
             # todo: check each exit code
           return jsonify(type='success', msg=str("Scheduled immediate delivery"))
 
@@ -418,8 +353,8 @@ class container_post(Resource):
         for line in cmd_response.split("\n"):
           if '$2$' in line:
             hash = line.strip()
-            hash_out = re.search('\$2\$.+$', hash).group(0)
-            rspamd_passphrase_hash = re.sub('[^0-9a-zA-Z\$]+', '', hash_out.rstrip())
+            hash_out = re.search(r'\$2\$.+$', hash).group(0)
+            rspamd_passphrase_hash = re.sub(r'[^0-9a-zA-Z\$]+', '', hash_out.rstrip())
 
             rspamd_password_filename = "/etc/rspamd/override.d/worker-controller-password.inc"
             cmd = '''/bin/echo 'enable_password = "%s";' > %s && cat %s''' % (rspamd_passphrase_hash, rspamd_password_filename, rspamd_password_filename)
@@ -438,8 +373,8 @@ def exec_cmd_container(container, cmd, user, timeout=2, shell_cmd="/bin/bash"):
 
   def recv_socket_data(c_socket, timeout):
     c_socket.setblocking(0)
-    total_data=[];
-    data='';
+    total_data=[]
+    data=''
     begin=time.time()
     while True:
       if total_data and time.time()-begin > timeout:
@@ -509,12 +444,9 @@ def startFlaskAPI():
   except:
     print ("Cannot initialize TLS, retrying in 5s...")
     time.sleep(5)
-  app.run(debug=False, host='0.0.0.0', port=5555, threaded=True, ssl_context=ctx)
+  app.run(debug=False, host='0.0.0.0', port=443, threaded=True, ssl_context=ctx)
 
 api.add_resource(containers_get, '/containers/json')
-api.add_resource(services_get, '/services/json')
-api.add_resource(service_get, '/services/<string:service_id>/json')
-api.add_resource(service_tasks_get, '/services/<string:service_id>/tasks/json')
 api.add_resource(swarm_containers_get, '/swarmcontainers/json/')
 api.add_resource(container_get,  '/containers/<string:container_id>/json')
 api.add_resource(container_post, '/containers/<string:container_id>/<string:post_action>')
