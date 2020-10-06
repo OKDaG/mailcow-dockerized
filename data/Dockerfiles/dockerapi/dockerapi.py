@@ -101,9 +101,9 @@ class nodes_container_get(Resource):
 class container_post(Resource):
   def post(self, container_id, post_action):
     if is_swarm_mode():
-      return nodes_containers_post().post(container_id, post_action)
+      return nodes_container_post().post(container_id, post_action)
     else:
-      return node_containers_post().post(container_id, post_action)
+      return node_container_post().post(container_id, post_action)
 
 class nodes_container_post(Resource):
   def post(self, container_id, post_action):
