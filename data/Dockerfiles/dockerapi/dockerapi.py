@@ -26,47 +26,27 @@ api = Api(app)
 
 class containers_get(Resource):
   def get(self):
-    if self.is_swarm_mode():
-      return self.swarm_containers_get()
+    if is_swarm_mode():
+      return nodes_containers_get()
     else:
-      return self.node_containers_get()
+      return node_containers_get()
 
-  def node_containers_get(self):
-    containers = {}
-    try:
-      for container in docker_client.containers.list(all=True):
-        containers.update({container.attrs['Id']: container.attrs})
-      return containers
-    except Exception as e:
-      return jsonify(type='danger', msg=str(e))
+# get all docker api nodes (deployed globally) in swarm to get container infos
+def get_dockerapi_tasks():
+  dockerapi_tasks = []
+  for dockerapi_service in docker_client.services.list(filters={"name":"mailcow_dockerapi-mailcow"}):
+    for dockerapi_task in docker_client.services.get(dockerapi_service.attrs['ID']).tasks():
+      dockerapi_tasks.append(dockerapi_task.get('NetworksAttachments')[0].get('Addresses')[0])
+  return dockerapi_tasks
 
-  def swarm_containers_get(self):
-    containers = {}
-    print(self.get_docker_swarm_nodes())
-    for node in self.get_docker_swarm_nodes():
-      host = IPv4Interface(node)
-      url = "https://" + str(host.ip) + "/swarmcontainers/json"
-      r = requests.get(url, verify=False)
-      r_containers = r.json()
-      containers.update(r_containers)
-    return containers
+def is_swarm_mode():
+  try:
+    docker_client.swarm.update()
+    return True
+  except (AttributeError, docker.errors.APIError):
+    return False
 
-  # get all docker api nodes (deployed globally) in swarm to get container infos
-  def get_docker_swarm_nodes(self):
-    swarm_nodes = []
-    for dockerapi_service in docker_client.services.list(filters={"name":"mailcow_dockerapi-mailcow"}):
-      for dockerapi_task in docker_client.services.get(dockerapi_service.attrs['ID']).tasks():
-        swarm_nodes.append(dockerapi_task.get('NetworksAttachments')[0].get('Addresses')[0])
-    return swarm_nodes
-
-  def is_swarm_mode(self):
-    try:
-      docker_client.swarm.update()
-      return True
-    except (AttributeError, docker.errors.APIError):
-      return False
-
-class swarm_containers_get(Resource):
+class node_containers_get(Resource):
   def get(self):
     containers = {}
     try:
@@ -75,6 +55,18 @@ class swarm_containers_get(Resource):
       return containers
     except Exception as e:
       return jsonify(type='danger', msg=str(e))
+
+class nodes_containers_get(Resource):
+  def get(self):
+    containers = {}
+    print(get_dockerapi_tasks())
+    for node in get_dockerapi_tasks():
+      host = IPv4Interface(node)
+      url = "https://" + str(host.ip) + "/nodecontainers/json"
+      r = requests.get(url, verify=False)
+      r_containers = r.json()
+      containers.update(r_containers)
+    return containers
 
 class container_get(Resource):
   def get(self, container_id):
@@ -447,7 +439,7 @@ def startFlaskAPI():
   app.run(debug=False, host='0.0.0.0', port=443, threaded=True, ssl_context=ctx)
 
 api.add_resource(containers_get, '/containers/json')
-api.add_resource(swarm_containers_get, '/swarmcontainers/json/')
+api.add_resource(node_containers_get, '/nodecontainers/json/')
 api.add_resource(container_get,  '/containers/<string:container_id>/json')
 api.add_resource(container_post, '/containers/<string:container_id>/<string:post_action>')
 
