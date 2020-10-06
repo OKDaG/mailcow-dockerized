@@ -24,14 +24,7 @@ docker_client = docker.DockerClient(base_url='unix://var/run/docker.sock', versi
 app = Flask(__name__)
 api = Api(app)
 
-class containers_get(Resource):
-  def get(self):
-    if is_swarm_mode():
-      return nodes_containers_get()
-    else:
-      return node_containers_get()
-
-# get all docker api nodes (deployed globally) in swarm to get container infos
+# get docker api service (deployed globally) in swarm to get container addresses
 def get_dockerapi_tasks():
   dockerapi_tasks = []
   for dockerapi_service in docker_client.services.list(filters={"name":"mailcow_dockerapi-mailcow"}):
@@ -46,6 +39,13 @@ def is_swarm_mode():
   except (AttributeError, docker.errors.APIError):
     return False
 
+class containers_get(Resource):
+  def get(self):
+    if is_swarm_mode():
+      return nodes_containers_get().get()
+    else:
+      return node_containers_get().get()
+
 class node_containers_get(Resource):
   def get(self):
     containers = {}
@@ -59,7 +59,6 @@ class node_containers_get(Resource):
 class nodes_containers_get(Resource):
   def get(self):
     containers = {}
-    print(get_dockerapi_tasks())
     for node in get_dockerapi_tasks():
       host = IPv4Interface(node)
       url = "https://" + str(host.ip) + "/nodecontainers/json"
@@ -70,6 +69,13 @@ class nodes_containers_get(Resource):
 
 class container_get(Resource):
   def get(self, container_id):
+    if is_swarm_mode():
+      return nodes_container_get().get(container_id)
+    else:
+      return node_container_get().get(container_id)
+
+class node_container_get(Resource):
+  def get(self, container_id):
     if container_id and container_id.isalnum():
       try:
         for container in docker_client.containers.list(all=True, filters={"id": container_id}):
@@ -78,6 +84,18 @@ class container_get(Resource):
           return jsonify(type='danger', msg=str(e))
     else:
       return jsonify(type='danger', msg='no or invalid id defined')
+
+class nodes_container_get(Resource):
+  def get(self, container_id):
+    container = {}
+    for node in get_dockerapi_tasks():
+      host = IPv4Interface(node)
+      url = "https://" + str(host.ip) + "/nodecontainers/" + container_id + "/json"
+      r = requests.get(url, verify=False)
+      r_containers = r.json()
+      if not r_containers is None:
+        container.update(r_containers)
+    return container
 
 class container_post(Resource):
   def post(self, container_id, post_action):
@@ -319,7 +337,7 @@ class container_post(Resource):
   def container_post__exec__sieve__print(self, container_id):
     if 'username' in request.json and 'script_name' in request.json:
       for container in docker_client.containers.list(filters={"id": container_id}):
-        cmd = ["/bin/bash", "-c", "/usr/bin/doveadm sieve get -u '" + request.json['username'].replace("'", "'\\''") + "' '" + request.json['script_name'].replace("'", "'\\''") + "'"]  
+        cmd = ["/bin/bash", "-c", "/usr/bin/doveadm sieve get -u '" + request.json['username'].replace("'", "'\\''") + "' '" + request.json['script_name'].replace("'", "'\\''") + "'"]
         sieve_return = container.exec_run(cmd)
         return exec_run_handler('utf8_text_only', sieve_return)
 
@@ -439,8 +457,9 @@ def startFlaskAPI():
   app.run(debug=False, host='0.0.0.0', port=443, threaded=True, ssl_context=ctx)
 
 api.add_resource(containers_get, '/containers/json')
-api.add_resource(node_containers_get, '/nodecontainers/json/')
+api.add_resource(node_containers_get, '/nodecontainers/json')
 api.add_resource(container_get,  '/containers/<string:container_id>/json')
+api.add_resource(node_container_get, '/nodecontainers/<string:container_id>/json')
 api.add_resource(container_post, '/containers/<string:container_id>/<string:post_action>')
 
 if __name__ == '__main__':
