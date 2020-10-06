@@ -88,6 +88,7 @@ class node_container_get(Resource):
 class nodes_container_get(Resource):
   def get(self, container_id):
     container = {}
+    # todo: don't iterate over all dockerapi_tasks, just fetch the right one and get the infos
     for node in get_dockerapi_tasks():
       host = IPv4Interface(node)
       url = "https://" + str(host.ip) + "/nodecontainers/" + container_id + "/json"
@@ -98,6 +99,18 @@ class nodes_container_get(Resource):
     return container
 
 class container_post(Resource):
+  def post(self, container_id, post_action):
+    if is_swarm_mode():
+      return nodes_containers_post().post(container_id, post_action)
+    else:
+      return node_containers_post().post(container_id, post_action)
+
+class nodes_container_post(Resource):
+  def post(self, container_id, post_action):
+    # todo: fetch dockerapi_taks for container_id and fire request to this task only
+    return True
+
+class node_container_post(Resource):
   def post(self, container_id, post_action):
     if container_id and container_id.isalnum() and post_action:
       try:
@@ -461,6 +474,7 @@ api.add_resource(node_containers_get, '/nodecontainers/json')
 api.add_resource(container_get,  '/containers/<string:container_id>/json')
 api.add_resource(node_container_get, '/nodecontainers/<string:container_id>/json')
 api.add_resource(container_post, '/containers/<string:container_id>/<string:post_action>')
+api.add_resource(node_container_post, '/nodecontainers/<string:container_id>/<string:post_action>')
 
 if __name__ == '__main__':
   api_thread = Thread(target=startFlaskAPI)
