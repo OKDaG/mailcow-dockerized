@@ -17,6 +17,7 @@ import ssl
 import socket
 import subprocess
 import traceback
+import json
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from ipaddress import IPv4Interface
@@ -107,8 +108,17 @@ class container_post(Resource):
 
 class nodes_container_post(Resource):
   def post(self, container_id, post_action):
-    # todo: fetch dockerapi_taks for container_id and fire request to this task only
-    return True
+    # todo: fetch dockerapi_task for specific container_id and fire request to this dockerapi only
+    for node in get_dockerapi_tasks():
+      host = IPv4Interface(node)
+      url = "https://" + str(host.ip) + "/nodecontainers/" + container_id + "/" + post_action
+      headers = {'content-type': 'application/json'}
+      payload = request.json
+      r = requests.post(url, data=json.dumps(payload), headers=headers, verify=False)
+      r_msg = r.json()
+      if not r_msg is None:
+        msg = r_msg
+    return msg
 
 class node_container_post(Resource):
   def post(self, container_id, post_action):
