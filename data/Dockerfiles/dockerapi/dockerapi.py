@@ -29,11 +29,7 @@ api = Api(app)
 
 # get docker api service (deployed globally) in swarm to get container addresses
 def get_dockerapi_tasks():
-  dockerapi_tasks = []
-  for dockerapi_service in docker_client.services.list(filters={"name": os.environ['COMPOSE_PROJECT_NAME'] + "_dockerapi-mailcow"}):
-    for dockerapi_task in docker_client.services.get(dockerapi_service.attrs['ID']).tasks():
-      dockerapi_tasks.append(dockerapi_task.get('NetworksAttachments')[0].get('Addresses')[0])
-  return dockerapi_tasks
+  return list(map(lambda x: x[4][0], socket.getaddrinfo('tasks.dockerapi', 443, type=socket.SOCK_STREAM)))
 
 def is_swarm_mode():
   try:
@@ -67,7 +63,8 @@ class nodes_containers_get(Resource):
       url = "https://" + str(host.ip) + "/nodecontainers/json"
       r = requests.get(url, verify=False)
       r_containers = r.json()
-      containers.update(r_containers)
+      if not r_containers is None:
+        containers.update(r_containers)
     return containers
 
 class container_get(Resource):
