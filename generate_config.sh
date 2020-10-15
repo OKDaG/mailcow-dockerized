@@ -25,6 +25,10 @@ if cp --help 2>&1 | grep -q -i "busybox"; then
   exit 1
 fi
 
+for bin in openssl curl docker-compose docker git awk sha1sum; do
+  if [[ -z $(which ${bin}) ]]; then echo "Cannot find ${bin}, exiting..."; exit 1; fi
+done
+
 if [ -f mailcow.conf ]; then
   read -r -p "A config file exists and will be overwritten, are you sure you want to contine? [y/N] " response
   case $response in
@@ -165,6 +169,7 @@ REDIS_PORT=127.0.0.1:7654
 TZ=${MAILCOW_TZ}
 
 # Fixed project name
+# Please use lowercase letters only
 
 COMPOSE_PROJECT_NAME=mailcowdockerized
 
@@ -179,7 +184,7 @@ ACL_ANYONE=disallow
 # How long should objects remain in the garbage until they are being deleted? (value in minutes)
 # Check interval is hourly
 
-MAILDIR_GC_TIME=1440
+MAILDIR_GC_TIME=7200
 
 # Additional SAN for the certificate
 #
@@ -231,15 +236,15 @@ SKIP_SOLR=${SKIP_SOLR}
 
 SOLR_HEAP=1024
 
-# Enable watchdog (watchdog-mailcow) to restart unhealthy containers (experimental)
-
-USE_WATCHDOG=n
-
 # Allow admins to log into SOGo as email user (without any password)
 
 ALLOW_ADMIN_EMAIL_LOGIN=n
 
-# Send notifications by mail (sent from watchdog@MAILCOW_HOSTNAME)
+# Enable watchdog (watchdog-mailcow) to restart unhealthy containers
+
+USE_WATCHDOG=y
+
+# Send watchdog notifications by mail (sent from watchdog@MAILCOW_HOSTNAME)
 # CAUTION:
 # 1. You should use external recipients
 # 2. Mails are sent unsigned (no DKIM)
@@ -250,7 +255,7 @@ ALLOW_ADMIN_EMAIL_LOGIN=n
 #WATCHDOG_NOTIFY_EMAIL=
 
 # Notify about banned IP (includes whois lookup)
-WATCHDOG_NOTIFY_BAN=y
+WATCHDOG_NOTIFY_BAN=n
 
 # Checks if mailcow is an open relay. Requires a SAL. More checks will follow.
 # https://www.servercow.de/mailcow?lang=en
@@ -305,4 +310,8 @@ mkdir -p data/assets/ssl
 chmod 600 mailcow.conf
 
 # copy but don't overwrite existing certificate
+echo "Generating snake-oil certificate..."
+# Making Willich more popular
+openssl req -x509 -newkey rsa:4096 -keyout data/assets/ssl-example/key.pem -out data/assets/ssl-example/cert.pem -days 365 -subj "/C=DE/ST=NRW/L=Willich/O=mailcow/OU=mailcow/CN=${MAILCOW_HOSTNAME}" -sha256 -nodes
+echo "Copying snake-oil certificate..."
 cp -n -d data/assets/ssl-example/*.pem data/assets/ssl/

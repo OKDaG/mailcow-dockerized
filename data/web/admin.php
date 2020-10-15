@@ -164,7 +164,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
                     <div class="form-group">
                       <label class="control-label col-sm-3"><?=$lang['admin']['api_key'];?>:</label>
                       <div class="col-sm-9">
-                        <pre><?=(empty(htmlspecialchars($api_ro['api_key']))) ? '-' : htmlspecialchars($api_ro['api_key']);?></pre>
+                        <pre><?=(empty($api_ro['api_key'])) ? '-' : htmlspecialchars($api_ro['api_key']);?></pre>
                       </div>
                     </div>
                     <div class="form-group">
@@ -178,7 +178,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
                       <div class="col-sm-offset-3 col-sm-9">
                         <div class="btn-group">
                           <button class="btn btn-sm btn-success" name="admin_api[ro]" type="submit" href="#"><span class="glyphicon glyphicon-check"></span> <?=$lang['admin']['save'];?></button>
-                          <button class="btn btn-sm btn-default admin-ays-dialog" name="admin_api_regen_key[ro]" type="submit" href="#"><?=$lang['admin']['regen_api_key'];?></button>
+                          <button class="btn btn-sm btn-default admin-ays-dialog" name="admin_api_regen_key[ro]" type="submit" href="#" <?=(!empty($api_ro['api_key'])) ?: 'disabled';?>><?=$lang['admin']['regen_api_key'];?></button>
                         </div>
                       </div>
                     </div>
@@ -209,7 +209,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
                     <div class="form-group">
                       <label class="control-label col-sm-3" for="admin_api_key"><?=$lang['admin']['api_key'];?>:</label>
                       <div class="col-sm-9">
-                        <pre><?=(empty(htmlspecialchars($api_rw['api_key']))) ? '-' : htmlspecialchars($api_rw['api_key']);?></pre>
+                        <pre><?=(empty($api_rw['api_key'])) ? '-' : htmlspecialchars($api_rw['api_key']);?></pre>
                       </div>
                     </div>
                     <div class="form-group">
@@ -223,7 +223,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
                       <div class="col-sm-offset-3 col-sm-9">
                         <div class="btn-group">
                           <button class="btn btn-sm btn-success" name="admin_api[rw]" type="submit" href="#"><span class="glyphicon glyphicon-check"></span> <?=$lang['admin']['save'];?></button>
-                          <button class="btn btn-sm btn-default admin-ays-dialog" name="admin_api_regen_key[rw]" type="submit" href="#"><?=$lang['admin']['regen_api_key'];?></button>
+                          <button class="btn btn-sm btn-default admin-ays-dialog" name="admin_api_regen_key[rw]" type="submit" <?=(!empty($api_rw['api_key'])) ?: 'disabled';?> href="#"><?=$lang['admin']['regen_api_key'];?></button>
                         </div>
                       </div>
                     </div>
@@ -433,11 +433,10 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
     <div class="panel panel-default">
       <div class="panel-heading"><?=$lang['admin']['dkim_keys'];?></div>
       <div class="panel-body">
-        <div class="mass-actions-admin">
-          <div class="btn-group btn-group-sm">
-            <button type="button" id="toggle_multi_select_all" data-id="dkim" class="btn btn-default"><?=$lang['mailbox']['toggle_all'];?></button>
-            <button type="button" data-action="delete_selected" name="delete_selected" data-id="dkim" data-api-url="delete/dkim" class="btn btn-danger"><?=$lang['admin']['remove'];?></button>
-          </div>
+        <div class="btn-group" data-toggle="button" style="margin-bottom: 20px;">
+          <a class="btn btn-sm btn-default active" href="#" data-toggle="collapse" data-target=".dkim_key_valid"><?=$lang['admin']['dkim_key_valid'];?></a>
+          <a class="btn btn-sm btn-default active" href="#" data-toggle="collapse" data-target=".dkim_key_unused"><?=$lang['admin']['dkim_key_unused'];?></a>
+          <a class="btn btn-sm btn-default active" href="#" data-toggle="collapse" data-target=".dkim_key_missing"><?=$lang['admin']['dkim_key_missing'];?></a>
         </div>
         <?php
         foreach(mailbox('get', 'domains') as $domain) {
@@ -445,7 +444,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
               $dkim_domains[] = $domain;
               ($GLOBALS['SHOW_DKIM_PRIV_KEYS'] === true) ?: $dkim['privkey'] = base64_encode('Please set $SHOW_DKIM_PRIV_KEYS to true to show DKIM private keys.');
           ?>
-            <div class="row">
+            <div class="row collapse in dkim_key_valid">
               <div class="col-md-1"><input type="checkbox" data-id="dkim" name="multi_select" value="<?=$domain;?>" /></div>
               <div class="col-md-3">
                 <p><?=$lang['admin']['domain'];?>: <strong><?=htmlspecialchars($domain);?></strong>
@@ -464,7 +463,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
           }
           else {
           ?>
-          <div class="row">
+          <div class="row collapse in dkim_key_missing">
             <div class="col-md-1"><input class="dkim_missing" type="checkbox" data-id="dkim" name="multi_select" value="<?=$domain;?>" disabled /></div>
             <div class="col-md-3">
               <p><?=$lang['admin']['domain'];?>: <strong><?=htmlspecialchars($domain);?></strong><br /><span class="label label-danger"><?=$lang['admin']['dkim_key_missing'];?></span></p>
@@ -479,7 +478,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
               $dkim_domains[] = $alias_domain;
               ($GLOBALS['SHOW_DKIM_PRIV_KEYS'] === true) ?: $dkim['privkey'] = base64_encode('Please set $SHOW_DKIM_PRIV_KEYS to true to show DKIM private keys.');
             ?>
-              <div class="row">
+              <div class="row collapse in dkim_key_valid">
               <div class="col-md-1"><input type="checkbox" data-id="dkim" name="multi_select" value="<?=$alias_domain;?>" /></div>
                 <div class="col-md-2 col-md-offset-1">
                   <p><small>↳ Alias-Domain: <strong><?=htmlspecialchars($alias_domain);?></strong></small>
@@ -498,7 +497,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
             }
             else {
             ?>
-            <div class="row">
+            <div class="row collapse in dkim_key_missing">
               <div class="col-md-1"><input class="dkim_missing" type="checkbox" data-id="dkim" name="multi_select" value="<?=$alias_domain;?>" disabled /></div>
               <div class="col-md-2 col-md-offset-1">
                 <p><small>↳ Alias-Domain: <strong><?=htmlspecialchars($alias_domain);?></strong><br /></small><span class="label label-danger"><?=$lang['admin']['dkim_key_missing'];?></span></p>
@@ -515,7 +514,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
             $dkim_domains[] = $blind;
             ($GLOBALS['SHOW_DKIM_PRIV_KEYS'] === true) ?: $dkim['privkey'] = base64_encode('Please set $SHOW_DKIM_PRIV_KEYS to true to show DKIM private keys.');
           ?>
-            <div class="row">
+            <div class="row collapse in dkim_key_unused">
               <div class="col-md-1"><input type="checkbox" data-id="dkim" name="multi_select" value="<?=$blind;?>" /></div>
               <div class="col-md-3">
                 <p><?=$lang['admin']['domain'];?>: <strong><?=htmlspecialchars($blind);?></strong>
@@ -534,6 +533,12 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
           }
         }
         ?>
+        <div class="mass-actions-admin">
+          <div class="btn-group btn-group-sm">
+            <button type="button" id="toggle_multi_select_all" data-id="dkim" class="btn btn-default"><span class="glyphicon glyphicon-check" aria-hidden="true"></span> <?=$lang['mailbox']['toggle_all'];?></button>
+            <button type="button" data-action="delete_selected" name="delete_selected" data-id="dkim" data-api-url="delete/dkim" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> <?=$lang['admin']['remove'];?></button>
+          </div>
+        </div>
 
         <legend style="margin-top:40px"><?=$lang['admin']['dkim_add_key'];?></legend>
         <form class="form" data-id="dkim" role="form" method="post">
@@ -571,6 +576,11 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
           <div class="form-group">
             <label for="private_key_file"><?=$lang['admin']['private_key'];?>: (RSA PKCS#8)</label>
             <textarea class="form-control input-sm" rows="10" name="private_key_file" id="private_key_file" required placeholder="-----BEGIN RSA KEY-----"></textarea>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" name="overwrite_existing" value="1"> <?=$lang['admin']['dkim_overwrite_key'];?>
+            </label>
           </div>
           <button class="btn btn-sm btn-default" data-action="add_item" data-id="dkim_import" data-api-url='add/dkim_import' data-api-attr='{}' href="#"><span class="glyphicon glyphicon-plus"></span> <?=$lang['admin']['import'];?></button>
         </form>
@@ -698,6 +708,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
               <input type="number" class="form-control" name="netban_ipv6" value="<?=$f2b_data['netban_ipv6'];?>" required>
             </div>
           </div>
+          <hr>
           <p class="help-block"><?=$lang['admin']['f2b_list_info'];?></p>
           <div class="form-group">
             <label for="whitelist"><?=$lang['admin']['f2b_whitelist'];?>:</label>
@@ -708,9 +719,39 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
             <textarea class="form-control" name="blacklist" rows="5"><?=$f2b_data['blacklist'];?></textarea>
           </div>
           <div class="btn-group">
-            <button class="btn btn-success" data-action="edit_selected" data-item="self" data-id="f2b" data-api-url='edit/fail2ban' data-api-attr='{}' href="#"><span class="glyphicon glyphicon-check"></span> <?=$lang['admin']['save'];?></button>
-            <a href="#" role="button" class="btn btn-default" data-toggle="modal" data-container="netfilter-mailcow" data-target="#RestartContainer"><span class="glyphicon glyphicon-refresh"></span> <?= $lang['header']['restart_netfilter']; ?></a>
+            <button class="btn btn-sm btn-success" data-action="edit_selected" data-item="self" data-id="f2b" data-api-url='edit/fail2ban' data-api-attr='{}' href="#"><span class="glyphicon glyphicon-check"></span> <?=$lang['admin']['save'];?></button>
+            <a href="#" role="button" class="btn btn-sm btn-default" data-toggle="modal" data-container="netfilter-mailcow" data-target="#RestartContainer"><span class="glyphicon glyphicon-refresh"></span> <?= $lang['header']['restart_netfilter']; ?></a>
           </div>
+        </form>
+        <hr>
+        <h4><?=$lang['admin']['f2b_filter'];?></h4>
+        <p class="help-block"><?=$lang['admin']['f2b_regex_info'];?></p>
+        <form class="form-inline" data-id="f2b_regex" role="form" method="post">
+          <table class="table table-condensed" id="f2b_regex_table">
+            <tr>
+              <th width="50px">ID</th>
+              <th>RegExp</th>
+              <th width="100px">&nbsp;</th>
+            </tr>
+            <?php
+            if (!empty($f2b_data['regex'])) {
+              foreach ($f2b_data['regex'] as $regex_id => $regex_val) {
+            ?>
+            <tr>
+              <td><input disabled class="input-sm form-control" style="text-align:center" data-id="f2b_regex" type="text" name="app" required value="<?=$regex_id;?>"></td>
+              <td><input class="input-sm form-control regex-input" data-id="f2b_regex" type="text" name="regex" required value="<?=htmlspecialchars($regex_val);?>"></td>
+              <td><a href="#" role="button" class="btn btn-xs btn-default" type="button"><?=$lang['admin']['remove_row'];?></a></td>
+            </tr>
+            <?php
+              }
+            }
+            ?>
+          </table>
+          <p><div class="btn-group">
+            <button class="btn btn-sm btn-success" data-action="edit_selected" data-item="admin" data-id="f2b_regex" data-reload="no" data-api-url='edit/fail2ban' data-api-attr='{"action":"edit-regex"}' href="#"><span class="glyphicon glyphicon-check"></span> <?=$lang['admin']['save'];?></button>
+            <button class="btn btn-sm btn-default admin-ays-dialog" data-action="edit_selected" data-item="self" data-id="f2b-quick" data-api-url='edit/fail2ban' data-api-attr='{"action":"reset-regex"}' href="#"><?=$lang['admin']['reset_default'];?></button>
+            <button class="btn btn-sm btn-default" type="button" id="add_f2b_regex_row"><span class="glyphicon glyphicon-plus"></span> <?=$lang['admin']['add_row'];?></button>
+          </div></p>
         </form>
         <hr>
         <p class="help-block"><?=$lang['admin']['ban_list_info'];?></p>
@@ -823,7 +864,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
             </div>
           </div>
           <div class="form-group">
-            <label class="col-sm-4 control-label" for="exclude_domains"><?=$lang['admin']['quarantine_exclude_domains'];?>:</label><br />
+            <label class="col-sm-4 control-label" for="exclude_domains"><?=$lang['admin']['quarantine_exclude_domains'];?>:</label>
             <div class="col-sm-8">
               <select data-width="100%" name="exclude_domains" class="selectpicker" title="<?=$lang['tfa']['select'];?>" multiple>
               <?php
@@ -923,7 +964,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
                 foreach ($rsettings as $rsetting):
                   $rsetting_details = rsettings('details', $rsetting['id']);
                 ?>
-                  <a href="#<?=$rsetting_details['id'];?>" class="list-group-item list-group-item-<?=($rsetting_details['active_int'] == '1') ? 'success' : ''; ?>" data-dont-remember="1" data-toggle="tab"><?=$rsetting_details['desc'];?> (ID #<?=$rsetting['id'];?>)</a>
+                  <a href="#<?=$rsetting_details['id'];?>" class="list-group-item list-group-item-<?=($rsetting_details['active'] == '1') ? 'success' : ''; ?>" data-dont-remember="1" data-toggle="tab"><?=$rsetting_details['desc'];?> (ID #<?=$rsetting['id'];?>)</a>
                 <?php
                 endforeach;
                 endif;
@@ -967,7 +1008,7 @@ if (!isset($_SESSION['gal']) && $license_cache = $redis->Get('LICENSE_STATUS_CAC
                     </div>
                     <div class="form-group">
                       <label>
-                        <input type="checkbox" name="active" value="1" <?=($rsetting_details['active_int'] == 1) ? 'checked' : null;?>> <?=$lang['admin']['active'];?>
+                        <input type="checkbox" name="active" value="1" <?=($rsetting_details['active'] == 1) ? 'checked' : null;?>> <?=$lang['admin']['active'];?>
                       </label>
                     </div>
                     <button class="btn btn-sm btn-success" data-action="edit_selected" data-item="<?=$rsetting_details['id'];?>" data-id="rsettings" data-api-url='edit/rsetting' data-api-attr='{}' href="#"><span class="glyphicon glyphicon-check"></span> <?=$lang['admin']['save'];?></button>

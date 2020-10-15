@@ -54,7 +54,7 @@ if (isset($_SESSION['mailcow_cc_role']) || isset($_SESSION['pending_mailcow_cc_u
     $extra =      (isset($query[3])) ? $query[3] : null;
 
     // accept json in request body
-    if($_SERVER['HTTP_CONTENT_TYPE'] === 'application/json') {
+    if(strpos($_SERVER['HTTP_CONTENT_TYPE'], 'application/json') !== false) {
       $request = file_get_contents('php://input');
       $requestDecoded = json_decode($request, true);
 
@@ -369,7 +369,7 @@ if (isset($_SESSION['mailcow_cc_role']) || isset($_SESSION['pending_mailcow_cc_u
                     echo $mailq;
                   }
                   else {
-                    echo '{}';
+                    echo '[]';
                   }
                 break;
               }
@@ -704,6 +704,10 @@ if (isset($_SESSION['mailcow_cc_role']) || isset($_SESSION['pending_mailcow_cc_u
                   else {
                     $logs = get_logs('rspamd-history');
                   }
+                  echo (isset($logs) && !empty($logs)) ? json_encode($logs, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) : '{}';
+                break;
+                case "rspamd-stats":
+                  $logs = get_logs('rspamd-stats');
                   echo (isset($logs) && !empty($logs)) ? json_encode($logs, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) : '{}';
                 break;
                 // return no route found if no case is matched
