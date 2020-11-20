@@ -61,21 +61,32 @@ services:
       - source: traefik_sslconfigfile
         target: /etc/traefik/dynamic.yml
 
-  traefik-certs-dumper:
-    image: ldez/traefik-certs-dumper:v2.7.0
-    entrypoint: sh -c '
-      apk add jq
-      ; while ! [ -e /data/acme.json ]
-        || ! [ `jq ".[].Certificates | length" /data/acme.json` != 0 ]; do
-          sleep 1
-      ; done
-      && echo watch certs
-      && traefik-certs-dumper file --watch
-        --source /data/acme.json --dest /data/certs --domain-subdir=true --version v2'
-    networks:
-      - public
+#  traefik-certs-dumper:
+#    image: ldez/traefik-certs-dumper:v2.7.0
+#    entrypoint: sh -c '
+#      apk add jq
+#      ; while ! [ -e /data/acme.json ]
+#        || ! [ `jq ".[].Certificates | length" /data/acme.json` != 0 ]; do
+#          sleep 1
+#      ; done
+#      && echo watch certs
+#      && traefik-certs-dumper file --watch
+#        --source /data/acme.json --dest /data/certs --domain-subdir=true --version v2'
+#    networks:
+#      - public
+#    volumes:
+#      - /opt/config/traefik:/data
+
+  certdumper:
+    image: humenius/traefik-certs-dumper
+    container_name: traefik_certdumper
+    network_mode: none
     volumes:
-      - /opt/config/traefik:/data
+      - /opt/config/traefik/:/traefik:ro
+      - /opt/config/mailcow/assets/ssl/:/output:rw
+    environment:
+      # only change this, if you're using another domain for mailcow's web frontend compared to the standard config
+      - DOMAIN=${MAILCOW_HOSTNAME}
 
 configs:
   traefik_sslconfigfile:

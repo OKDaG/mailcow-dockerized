@@ -92,6 +92,7 @@ function docker($action, $service_name = null, $attr1 = null, $attr2 = null, $ex
               if (isset($container['Config']['Labels']['com.docker.stack.namespace'])
                 && strtolower($container['Config']['Labels']['com.docker.stack.namespace']) == strtolower(getenv('COMPOSE_PROJECT_NAME'))) {
                 unset($container['Config']['Env']);
+                $container['Config']['Labels']['com.docker.swarm.service.name'] = str_replace(strtolower(getenv('COMPOSE_PROJECT_NAME'))."_" ,"",$container['Config']['Labels']['com.docker.swarm.service.name']);
                 $out[$container['Config']['Labels']['com.docker.swarm.service.name']]['State'] = $container['State'];
                 $out[$container['Config']['Labels']['com.docker.swarm.service.name']]['Config'] = $container['Config'];
               }
@@ -100,7 +101,8 @@ function docker($action, $service_name = null, $attr1 = null, $attr2 = null, $ex
           else {
             if (isset($decoded_response['Config']['Labels']['com.docker.stack.namespace']) 
               && strtolower($decoded_response['Config']['Labels']['com.docker.stack.namespace']) == strtolower(getenv('COMPOSE_PROJECT_NAME'))) {
-              unset($container['Config']['Env']);
+              unset($decoded_response['Config']['Env']);
+              $decoded_response['Config']['Labels']['com.docker.swarm.service.name'] = str_replace(strtolower(getenv('COMPOSE_PROJECT_NAME'))."_" ,"",$decoded_response['Config']['Labels']['com.docker.swarm.service.name']);
               $out[$decoded_response['Config']['Labels']['com.docker.swarm.service.name']]['State'] = $decoded_response['State'];
               $out[$decoded_response['Config']['Labels']['com.docker.swarm.service.name']]['Config'] = $decoded_response['Config'];
             }

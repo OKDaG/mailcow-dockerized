@@ -113,7 +113,10 @@ class nodes_container_post(Resource):
       host = IPv4Interface(node)
       url = "https://" + str(host.ip) + "/nodecontainers/" + container_id + "/" + post_action
       headers = {'content-type': 'application/json'}
-      payload = request.json
+      if post_action == 'exec':
+        payload = request.json
+      else:
+        payload = {}
       r = requests.post(url, data=json.dumps(payload), headers=headers, verify=False)
       if 'application/json' in r.headers.get('content-type'):
         r_msg = r.json()
@@ -165,10 +168,12 @@ class node_container_post(Resource):
 
   # api call: container_post - post_action: restart
   def container_post__restart(self, container_id):
-    for container in docker_client.containers.list(all=True, filters={"id": container_id}):
-      container.restart()
-    return jsonify(type='success', msg='command completed successfully')
-
+    if docker_client.containers.list(all=True, filters={"id": container_id}):
+      for container in docker_client.containers.list(all=True, filters={"id": container_id}):
+        container.restart()
+      return jsonify(type='success', msg='command completed successfully')
+    else:
+      return None
 
   # api call: container_post - post_action: top
   def container_post__top(self, container_id):
